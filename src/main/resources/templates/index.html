@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <title>ME'S MENU</title>
+</head>
+<body>
+<h1>WELCOME TO ME'S MENU</h1>
+<p th:if="${nickname}">Hello, <span th:text="${nickname}"></span>!</p>
+<a href="/join">Join</a> | <a href="/login">Login</a>
+</body>
+</html>
