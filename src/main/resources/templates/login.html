@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8">
   <title>Login</title>
 </head>
 <body>
 <h1>Login</h1>
+
+<!-- 로그인 실패 메시지 출력 -->
+<p th:if="${param.error}" th:text="${param.error}" style="color:red;"></p>
+
 <form action="/login" method="post">
   <input type="email" name="email" placeholder="Email"><br>
   <input type="password" name="password" placeholder="Password"><br>
@@ -16,5 +20,7 @@
 </form>
 
 <a href="/join">회원가입</a>
+<hr>
+<a href="/oauth2/authorization/kakao">카카오로그인</a>
 </body>
 </html>

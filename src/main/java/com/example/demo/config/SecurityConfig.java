@@ -43,8 +43,9 @@ public class SecurityConfig {
 
         // 접근 제한
         http.authorizeHttpRequests((auth) -> {
-            auth.requestMatchers("/","/join","/login","/testCheckPassword").permitAll();
+            auth.requestMatchers("/","/join","/login").permitAll();
             auth.requestMatchers("/user").hasRole("USER");
+            auth.requestMatchers("/admin").hasRole("ADMIN");
             auth.anyRequest().authenticated();
         });
 
@@ -52,6 +53,8 @@ public class SecurityConfig {
         http.formLogin((login) -> {
             login.permitAll();
             login.loginPage("/login");
+            login.usernameParameter("email");              // username → email [로그인 요청 시 email 필드를 username 대신 사용]
+            login.passwordParameter("password");           // password 그대로
             login.successHandler(new CustomLoginSuccessHandler());
             login.failureHandler(new CustomAuthenticationFailureHandler());
         });
@@ -73,6 +76,12 @@ public class SecurityConfig {
         });
 
 
+        // oauth2-client
+        http.oauth2Login((oauh2) -> {
+           oauh2.loginPage("/login");
+        });
+
+
         // remember me
         http.rememberMe((rm) -> {
            rm.key("rememberMeKey");
@@ -84,7 +93,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-
+    // DB 기반 Remember-Me 토큰 저장소를 설정
     @Autowired
     private DataSource dataSource;
     @Bean
@@ -93,5 +102,7 @@ public class SecurityConfig {
         repo.setDataSource(dataSource);
         return repo;
     }
+
+
 
 }

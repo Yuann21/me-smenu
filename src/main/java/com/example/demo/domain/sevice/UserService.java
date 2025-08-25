@@ -28,6 +28,7 @@ public class UserService {
                 .nickname(dto.getNickname())
                 .passwordHash(passwordEncoder.encode(dto.getPassword()))
                 .role(User.Role.USER)
+                .isActive(true)             // DB에 is_active = 1로 들어감(true)
                 .build();
 
         // 3. 엔티티 저장
@@ -35,10 +36,5 @@ public class UserService {
 
     }
 
-    // 비밀번호 검증 테스트용
-    public boolean checkPassword(String rawPassword, String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return passwordEncoder.matches(rawPassword, user.getPasswordHash());
-    }
+
 }

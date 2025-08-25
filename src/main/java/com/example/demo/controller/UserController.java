@@ -12,7 +12,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @Slf4j
@@ -34,6 +33,10 @@ public class UserController {
     @GetMapping("/user")
     public String user(@AuthenticationPrincipal PrincipalDetails principalDetails, Model model) {
         log.info("GET/user ______");
+        if (principalDetails == null) {
+            // 보안상 절대 발생 안 해야 하지만, 혹시 대비
+            return "redirect:/login";
+        }
         model.addAttribute("nickname", principalDetails.getUser().getNickname());
         model.addAttribute("email", principalDetails.getUser().getEmail());
         return "user";
@@ -74,14 +77,4 @@ public class UserController {
     }
 
 
-    // 테스트용 비밀번호 확인
-    @GetMapping("/testCheckPassword")
-    @ResponseBody
-    public String testCheckPassword(String email, String password) {
-        if (email == null || email.isEmpty()) {
-            return "Error: email is required";
-        }
-        boolean result = userService.checkPassword(password, email);
-        return "Password matches? " + result;
-    }
 }

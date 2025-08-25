@@ -14,28 +14,27 @@ import java.util.Collection;
 @Slf4j
 public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException, ServletException {
 
         String path = request.getContextPath();
+        log.info("로그인 성공 - authentication: {}", authentication);
 
-        log.info("CustomLoginSuccessHandler's on AuthenticationSuccess authentication : " + authentication);
-        Collection<? extends GrantedAuthority> collection = authentication.getAuthorities();
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
-        collection.forEach(role -> {
-            log.info("ROLE : " + role.getAuthority());
-            String role_str = role.getAuthority();
+        String redirectUrl = path + "/user"; // 기본값
 
-            try{
-                if(role_str.equals("ROLE_ADMIN")){
-                    response.sendRedirect(path + "/admin");
-                    return;
-                } else {
-                    response.sendRedirect(path + "/user");
-                    return;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+        for (GrantedAuthority authority : authorities) {
+            String role = authority.getAuthority();
+            log.info("ROLE : {}", role);
+
+            if ("ROLE_ADMIN".equals(role)) {
+                redirectUrl = path + "/admin";
+                break; // ADMIN 권한이 있으면 바로 종료
             }
-        });
+        }
+
+        response.sendRedirect(redirectUrl);
     }
 }
