@@ -16,11 +16,11 @@ public class UserService {
 
 
 
-    public User registerUser(UserDto dto) {
-        // 1. 이메일 중복 체크
-        if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
+    public User registerUser(UserDto dto, String email) {
+        // 로컬 계정 중복 확인 (email+provider)
+        userRepository.findByEmailAndProvider(email, "local")
+                .ifPresent(u -> { throw new IllegalArgumentException("이미 가입된 이메일입니다."); });
+
 
         // 2. User 엔티티로 변환 및 비밀번호 암호화, 기본 USER role 부여
         User user = User.builder()
@@ -29,6 +29,8 @@ public class UserService {
                 .passwordHash(passwordEncoder.encode(dto.getPassword()))
                 .role(User.Role.USER)
                 .isActive(true)             // DB에 is_active = 1로 들어감(true)
+                .provider("local")          // local 고정
+                .providerId(null)           // local은 null
                 .build();
 
         // 3. 엔티티 저장

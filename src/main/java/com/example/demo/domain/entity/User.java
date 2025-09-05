@@ -15,6 +15,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
+@Table(
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"email", "provider"}) // email + provider 조합 unique
+        }
+)
 public class User {
 
 
@@ -70,5 +76,12 @@ public class User {
         USER,
         ADMIN
     }
+
+    // OAUTH2
+    @Column(nullable = false, length = 50)
+    private String provider;   // google, kakao, naver
+
+    @Column(length = 100)
+    private String providerId; // 각 provider에서 제공하는 unique id
 
 }

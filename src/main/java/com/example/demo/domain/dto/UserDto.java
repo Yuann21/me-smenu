@@ -13,4 +13,8 @@ public class UserDto {
     private String nickname;
     private String email;
     private String password;
+
+    // social login
+    private String provider;             // "google", "kakao", "naver"
+    private String providerId;           // social에서 제공하는 PK
 }
