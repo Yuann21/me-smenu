@@ -3,11 +3,18 @@ package com.example.demo.config;
 import com.example.demo.config.auth.PrincipalDetailsService;
 import com.example.demo.config.auth.exceptionHandler.CustomAccessDeniedHandler;
 import com.example.demo.config.auth.exceptionHandler.CustomAuthenticationEntryPoint;
+import com.example.demo.config.auth.jwt.JwtAuthorizationFilter;
+import com.example.demo.config.auth.jwt.JwtProperties;
+import com.example.demo.config.auth.jwt.JwtTokenProvider;
 import com.example.demo.config.auth.loginHandler.CustomAuthenticationFailureHandler;
 import com.example.demo.config.auth.loginHandler.CustomLoginSuccessHandler;
 import com.example.demo.config.auth.logoutHandler.CustomLogoutHandler;
 import com.example.demo.config.auth.logoutHandler.CustomLogoutSuccessHandler;
+import com.example.demo.domain.repository.JWTTokenRepository;
+import com.example.demo.domain.repository.SignatureRepository;
+import com.example.demo.domain.repository.UserRepository;
 import com.example.demo.domain.sevice.OAuthUnlinkService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,9 +38,24 @@ public class SecurityConfig {
     private final PrincipalDetailsService principalDetailsService;
     private final OAuthUnlinkService oAuthUnlinkService;
 
-    public SecurityConfig(PrincipalDetailsService principalDetailsService, OAuthUnlinkService oAuthUnlinkService) {
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository;
+
+    private final SignatureRepository signatureRepository;
+    private final JWTTokenRepository jwtTokenRepository;
+    private final HttpServletResponse response;
+    private final JwtProperties jwtProperties;
+
+
+    public SecurityConfig(PrincipalDetailsService principalDetailsService, OAuthUnlinkService oAuthUnlinkService, UserRepository userRepository, JwtTokenProvider jwtTokenProvider, SignatureRepository signatureRepository, JWTTokenRepository jwtTokenRepository, HttpServletResponse response, JwtProperties jwtProperties) {
         this.principalDetailsService = principalDetailsService;
         this.oAuthUnlinkService = oAuthUnlinkService;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userRepository = userRepository;
+        this.signatureRepository = signatureRepository;
+        this.jwtTokenRepository = jwtTokenRepository;
+        this.response = response;
+        this.jwtProperties = jwtProperties;
     }
 
 
@@ -52,6 +74,8 @@ public class SecurityConfig {
         return repo;
     }
 
+
+    // CustomLogoutHandler Bean
     @Bean
     public CustomLogoutHandler customLogoutHandler(PersistentTokenRepository persistentTokenRepository,
                                                    OAuthUnlinkService oAuthUnlinkService,
@@ -60,8 +84,33 @@ public class SecurityConfig {
         return new CustomLogoutHandler(oAuthUnlinkService, persistentTokenRepository, naverClientId, naverClientSecret);
     }
 
+    // JwtAuthorizationFilter Bean
     @Bean
-    public SecurityFilterChain config(HttpSecurity http, CustomLogoutHandler customLogoutHandler) throws Exception{
+    public JwtAuthorizationFilter jwtAuthorizationFilter() {
+        return new JwtAuthorizationFilter(jwtTokenProvider, userRepository);
+    }
+
+//    // JwtTokenProvider Bean
+//    @Bean
+//    public JwtTokenProvider jwtTokenProvider() {
+//        return new JwtTokenProvider(signatureRepository, jwtTokenRepository, response, jwtProperties);
+//    }
+//
+//    // JwtProperties Bean
+//    @Bean
+//    public JwtProperties jwtProperties(
+//            @Value("${jwt.access-token-validity-in-ms}") long accessTokenValidityInMs,
+//            @Value("${jwt.refresh-token-validity-in-ms}") long refreshTokenValidityInMs) {
+//        JwtProperties props = new JwtProperties();
+//        props.setAccessTokenValidityInMs(accessTokenValidityInMs);
+//        props.setRefreshTokenValidityInMs(refreshTokenValidityInMs);
+//        return props;
+//    }
+
+
+    // SecurityFilterChain
+    @Bean
+    public SecurityFilterChain config(HttpSecurity http, CustomLogoutHandler customLogoutHandler, JwtAuthorizationFilter jwtAuthorizationFilter) throws Exception{
 
         // csrf 비활성화
         http.csrf((config -> {config.disable();}));
@@ -129,10 +178,9 @@ public class SecurityConfig {
         );
 
 
+        // JWT 필터 추가 (Bean 사용)
+        http.addFilterBefore(jwtAuthorizationFilter, BasicAuthenticationFilter.class);
 
-        // JWT FILTER ADDED
-        http.addFilterBefore(new JwtAuthorizationFilter(userRepository, jwtTokenProvider),
-                BasicAuthenticationFilter.class);
 
 
         return http.build();

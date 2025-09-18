@@ -11,6 +11,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import java.io.IOException;
 import java.util.Collection;
 
+
 @Slf4j
 public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override

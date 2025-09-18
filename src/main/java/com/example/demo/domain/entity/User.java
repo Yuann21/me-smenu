@@ -44,15 +44,19 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
+    @Builder.Default
     private Role role = Role.USER;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private boolean isActive = true;
 
     @Column(length = 10)
+    @Builder.Default
     private String locale = "ko";
 
     @Column(length = 50)
+    @Builder.Default
     private String timezone = "Asia/Seoul";
 
     @Column(name = "notif_morning_time")
