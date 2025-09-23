@@ -1,6 +1,6 @@
 package com.example.demo.config.auth.logoutHandler;
 
-import com.example.demo.config.auth.PrincipalDetails;
+import com.example.demo.config.auth.jwt.JwtProperties;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,11 +11,12 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Slf4j
 @Component
 public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
-    
+
     @Value("${KAKAO_CLIENT_ID}")
     private String kakaoClientId;
 
@@ -23,40 +24,51 @@ public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
     private String kakaoLogoutRedirectUri;
 
     @Override
-    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onLogoutSuccess(HttpServletRequest request,
+                                HttpServletResponse response,
+                                Authentication authentication) throws IOException, ServletException {
 
-            log.info("CustomLogoutSucceessHandler's onLogoutSuccesss()");
-            log.info("kakaoClientId : " + kakaoClientId );
-            log.info("kakaoLogoutRedirectUri : " + kakaoLogoutRedirectUri );
+        log.info("➡️ CustomLogoutSuccessHandler 실행");
 
+        // 1️⃣ JWT 쿠키 삭제
+        if (request.getCookies() != null) {
+            Arrays.stream(request.getCookies())
+                    .filter(cookie -> JwtProperties.COOKIE_NAME.equals(cookie.getName()))
+                    .forEach(cookie -> {
+                        cookie.setMaxAge(0);
+                        cookie.setPath("/");
+                        response.addCookie(cookie);
+                        log.info("JWT 쿠키 삭제 완료");
+                    });
+        }
 
-            // Authentication null check
-            if (authentication == null || !(authentication.getPrincipal() instanceof PrincipalDetails)) {
-                log.warn("Invalid authentication, redirecting to home");
-                response.sendRedirect("/");
-                return;
+        // 2️⃣ Provider별 Redirect
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof com.example.demo.config.auth.PrincipalDetails principalDetails) {
+                String provider = principalDetails.getUser().getProvider();
+                log.info("로그아웃 Redirect 처리: provider={}", provider);
+
+                switch (provider.toLowerCase()) {
+                    case "kakao" -> {
+                        response.sendRedirect("https://kauth.kakao.com/oauth/logout?client_id=" + kakaoClientId +
+                                "&logout_redirect_uri=" + kakaoLogoutRedirectUri);
+                        return;
+                    }
+                    case "naver" -> {
+                        response.sendRedirect("https://nid.naver.com/nidlogin.logout?returl=https://www.naver.com/");
+                        return;
+                    }
+                    case "google" -> {
+                        response.sendRedirect("https://accounts.google.com/Logout");
+                        return;
+                    }
+                    default -> log.info("Provider 매칭 없음, 기본 Redirect 수행");
+                }
             }
+        }
 
-            PrincipalDetails principalDetails = (PrincipalDetails)authentication.getPrincipal();
-            String provider = principalDetails.getUser().getProvider();
-            log.info("Logout requested. Provider: {}", provider);
-
-
-            // logout 처리
-            if("kakao".equalsIgnoreCase(provider)){             // 대소문자 구분이 필요 없이. provider가 null일 때도 false만 반환되고, 예외는 안 터집
-                log.info("GET /kakao/logoutWithKakao...");
-                response.sendRedirect("https://kauth.kakao.com/oauth/logout?client_id="+ kakaoClientId +"&logout_redirect_uri=" + kakaoLogoutRedirectUri);
-                return;
-            }else if("naver".equalsIgnoreCase(provider)) {
-                response.sendRedirect("https://nid.naver.com/nidlogin.logout?returl=https://www.naver.com/");
-                return;
-            }else if("google".equalsIgnoreCase(provider)){
-                // google
-                response.sendRedirect("https://accounts.google.com/Logout");
-                return;
-            }
-
-        // 기본 fallback
+        // 3️⃣ 기본 fallback
         response.sendRedirect("/");
     }
 }

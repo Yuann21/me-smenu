@@ -9,7 +9,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "JWTToken")
+@Table(
+        name = "JWTToken",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"email", "provider"})}
+)
 @NoArgsConstructor
 @AllArgsConstructor
 @Data

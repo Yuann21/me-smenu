@@ -8,9 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface JWTTokenRepository extends JpaRepository<JWTToken, Long> {
-    // Username 기준 조회
-//    Optional<JWTToken> findByUsername(String username);
-
 
     // AccessToken 기준 조회
     JWTToken findByAccessToken(String accessToken);

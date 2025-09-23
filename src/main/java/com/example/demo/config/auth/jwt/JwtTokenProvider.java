@@ -15,14 +15,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -98,20 +97,20 @@ public class JwtTokenProvider {
                 .setExpiration(refreshExpiry)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
-
-        // ------------------- DB 저장 -------------------
-        JWTToken jwtToken = jwtTokenRepository
-                .findByEmailAndProvider(principal.getUsername(), principal.getUser().getProvider())
-                .orElse(JWTToken.builder()
-                        .email(principal.getUsername())
-                        .provider(principal.getUser().getProvider())
-                        .build());
-
-        jwtToken.setAccessToken(accessToken);
-        jwtToken.setRefreshToken(refreshToken);
-        jwtToken.setIssuedAt(LocalDateTime.now());
-
-        jwtTokenRepository.save(jwtToken);
+//
+//        // ------------------- DB 저장 -------------------
+//        JWTToken jwtToken = jwtTokenRepository
+//                .findByEmailAndProvider(principal.getUsername(), principal.getUser().getProvider())
+//                .orElse(JWTToken.builder()
+//                        .email(principal.getUsername())
+//                        .provider(principal.getUser().getProvider())
+//                        .build());
+//
+//        jwtToken.setAccessToken(accessToken);
+//        jwtToken.setRefreshToken(refreshToken);
+//        jwtToken.setIssuedAt(LocalDateTime.now());
+//
+//        jwtTokenRepository.save(jwtToken);
 
         return TokenInfo.builder()
                 .grantType(JwtProperties.TOKEN_PREFIX.trim())
@@ -185,6 +184,7 @@ public class JwtTokenProvider {
         return false;
     }
 
+    // ============================== Refresh Token 검증 ==============================
     private boolean validateRefreshToken(String refreshToken) {
         try {
             Jwts.parser().setSigningKey(key).build().parseSignedClaims(refreshToken);
@@ -195,6 +195,7 @@ public class JwtTokenProvider {
     }
 
 
+     // ============================== 토큰 파싱 ==============================
     protected Claims parseClaims(String token) {
         try {
             return Jwts.parser().setSigningKey(key).build().parseClaimsJws(token).getBody();

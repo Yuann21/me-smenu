@@ -8,13 +8,12 @@ import com.example.demo.config.auth.jwt.JwtProperties;
 import com.example.demo.config.auth.jwt.JwtTokenProvider;
 import com.example.demo.config.auth.loginHandler.CustomAuthenticationFailureHandler;
 import com.example.demo.config.auth.loginHandler.CustomLoginSuccessHandler;
+import com.example.demo.config.auth.loginHandler.Oauth2JwtLoginSuccessHandler;
 import com.example.demo.config.auth.logoutHandler.CustomLogoutHandler;
 import com.example.demo.config.auth.logoutHandler.CustomLogoutSuccessHandler;
 import com.example.demo.domain.repository.JWTTokenRepository;
-import com.example.demo.domain.repository.SignatureRepository;
 import com.example.demo.domain.repository.UserRepository;
 import com.example.demo.domain.sevice.OAuthUnlinkService;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -41,21 +40,13 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
 
-    private final SignatureRepository signatureRepository;
-    private final JWTTokenRepository jwtTokenRepository;
-    private final HttpServletResponse response;
-    private final JwtProperties jwtProperties;
 
 
-    public SecurityConfig(PrincipalDetailsService principalDetailsService, OAuthUnlinkService oAuthUnlinkService, UserRepository userRepository, JwtTokenProvider jwtTokenProvider, SignatureRepository signatureRepository, JWTTokenRepository jwtTokenRepository, HttpServletResponse response, JwtProperties jwtProperties) {
+    public SecurityConfig(PrincipalDetailsService principalDetailsService, OAuthUnlinkService oAuthUnlinkService, UserRepository userRepository, JwtTokenProvider jwtTokenProvider) {
         this.principalDetailsService = principalDetailsService;
         this.oAuthUnlinkService = oAuthUnlinkService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
-        this.signatureRepository = signatureRepository;
-        this.jwtTokenRepository = jwtTokenRepository;
-        this.response = response;
-        this.jwtProperties = jwtProperties;
     }
 
 
@@ -77,11 +68,13 @@ public class SecurityConfig {
 
     // CustomLogoutHandler Bean
     @Bean
-    public CustomLogoutHandler customLogoutHandler(PersistentTokenRepository persistentTokenRepository,
+    public CustomLogoutHandler customLogoutHandler(JwtTokenProvider jwtTokenProvider,
+                                                   JWTTokenRepository jwtTokenRepository,
+                                                   PersistentTokenRepository persistentTokenRepository,
                                                    OAuthUnlinkService oAuthUnlinkService,
                                                    @Value("${NAVER_CLIENT_ID}") String naverClientId,
                                                    @Value("${NAVER_CLIENT_SECRET}") String naverClientSecret) {
-        return new CustomLogoutHandler(oAuthUnlinkService, persistentTokenRepository, naverClientId, naverClientSecret);
+        return new CustomLogoutHandler(jwtTokenProvider, jwtTokenRepository, oAuthUnlinkService, persistentTokenRepository, naverClientId, naverClientSecret);
     }
 
     // JwtAuthorizationFilter Bean
@@ -90,27 +83,11 @@ public class SecurityConfig {
         return new JwtAuthorizationFilter(jwtTokenProvider, userRepository);
     }
 
-//    // JwtTokenProvider Bean
-//    @Bean
-//    public JwtTokenProvider jwtTokenProvider() {
-//        return new JwtTokenProvider(signatureRepository, jwtTokenRepository, response, jwtProperties);
-//    }
-//
-//    // JwtProperties Bean
-//    @Bean
-//    public JwtProperties jwtProperties(
-//            @Value("${jwt.access-token-validity-in-ms}") long accessTokenValidityInMs,
-//            @Value("${jwt.refresh-token-validity-in-ms}") long refreshTokenValidityInMs) {
-//        JwtProperties props = new JwtProperties();
-//        props.setAccessTokenValidityInMs(accessTokenValidityInMs);
-//        props.setRefreshTokenValidityInMs(refreshTokenValidityInMs);
-//        return props;
-//    }
 
 
     // SecurityFilterChain
     @Bean
-    public SecurityFilterChain config(HttpSecurity http, CustomLogoutHandler customLogoutHandler, JwtAuthorizationFilter jwtAuthorizationFilter) throws Exception{
+    public SecurityFilterChain config(HttpSecurity http, CustomLogoutHandler customLogoutHandler, JwtAuthorizationFilter jwtAuthorizationFilter, CustomLoginSuccessHandler customLoginSuccessHandler, Oauth2JwtLoginSuccessHandler oauth2JwtLoginSuccessHandler,CustomLogoutSuccessHandler customLogoutSuccessHandler) throws Exception{
 
         // csrf 비활성화
         http.csrf((config -> {config.disable();}));
@@ -129,7 +106,7 @@ public class SecurityConfig {
             login.loginPage("/login");
             login.usernameParameter("email");              // username → email [로그인 요청 시 email 필드를 username 대신 사용]
             login.passwordParameter("password");           // password 그대로
-            login.successHandler(new CustomLoginSuccessHandler());
+            login.successHandler(customLoginSuccessHandler);
             login.failureHandler(new CustomAuthenticationFailureHandler());
         });
 
@@ -139,7 +116,11 @@ public class SecurityConfig {
             logout.permitAll();
             logout.logoutUrl("/logout");
             logout.addLogoutHandler(customLogoutHandler);
-            logout.logoutSuccessHandler(new CustomLogoutSuccessHandler());
+            logout.logoutSuccessHandler(customLogoutSuccessHandler);
+
+            // JWT
+            logout.deleteCookies("JSESSIONID", JwtProperties.COOKIE_NAME);
+            logout.invalidateHttpSession(true);
         });
 
 
@@ -153,7 +134,7 @@ public class SecurityConfig {
         // oauth2-client
         http.oauth2Login((oauh2) -> {
            oauh2.loginPage("/login");
-           oauh2.defaultSuccessUrl("/user", true); // 로그인 성공 후 이동할 URL
+           oauh2.successHandler(oauth2JwtLoginSuccessHandler);
         });
 
 
