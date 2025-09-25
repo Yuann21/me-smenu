@@ -13,8 +13,10 @@ pipeline {
 
         DB_CREDENTIALS_ID = 'db-credentials'
 
-        // OATUH LOGIN - KAKAO
+        // OATUH LOGIN
         KAKAO_CREDENTIALS_ID = 'kakao-credentials'
+        NAVER_CREDENTIALS_ID = 'naver-credentials'
+        GOOGLE_CREDENTIALS_ID = 'google-credentials'
 
 
     }
@@ -52,6 +54,16 @@ pipeline {
                     credentialsId: env.KAKAO_CREDENTIALS_ID,
                     usernameVariable: 'KAKAO_CLIENT_ID',
                     passwordVariable: 'KAKAO_CLIENT_SECRET'
+                  ),
+                  usernamePassword(
+                    credentialsId: env.NAVER_CREDENTIALS_ID,
+                    usernameVariable: 'NAVER_CLIENT_ID',
+                    passwordVariable: 'NAVER_CLIENT_SECRET'
+                  ),
+                  usernamePassword(
+                    credentialsId: env.GOOGLE_CREDENTIALS_ID,
+                    usernameVariable: 'GOOGLE_CLIENT_ID',
+                    passwordVariable: 'GOOGLE_CLIENT_SECRET'
                   )
 		        ]) {
 		         sh """
@@ -63,6 +75,12 @@ DB_PASSWORD=${DB_PASS}
 
 KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
 KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+
+NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
+NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
+
+GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
 EOF
                        """
 		            echo ".env 파일 생성 완료"
