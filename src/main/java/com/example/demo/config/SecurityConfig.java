@@ -23,6 +23,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
@@ -40,13 +41,16 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
 
+    private final Oauth2JwtLoginSuccessHandler oauth2JwtLoginSuccessHandler;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
-
-    public SecurityConfig(PrincipalDetailsService principalDetailsService, OAuthUnlinkService oAuthUnlinkService, UserRepository userRepository, JwtTokenProvider jwtTokenProvider) {
+    public SecurityConfig(PrincipalDetailsService principalDetailsService, OAuthUnlinkService oAuthUnlinkService, UserRepository userRepository, JwtTokenProvider jwtTokenProvider, Oauth2JwtLoginSuccessHandler oauth2JwtLoginSuccessHandler, ClientRegistrationRepository clientRegistrationRepository) {
         this.principalDetailsService = principalDetailsService;
         this.oAuthUnlinkService = oAuthUnlinkService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
+        this.oauth2JwtLoginSuccessHandler = oauth2JwtLoginSuccessHandler;
+        this.clientRegistrationRepository = clientRegistrationRepository;
     }
 
 
@@ -132,9 +136,9 @@ public class SecurityConfig {
 
 
         // oauth2-client
-        http.oauth2Login((oauh2) -> {
-           oauh2.loginPage("/login");
-           oauh2.successHandler(oauth2JwtLoginSuccessHandler);
+        http.oauth2Login((oauth2) -> {
+           oauth2.loginPage("/login");
+           oauth2.successHandler(oauth2JwtLoginSuccessHandler);
         });
 
 

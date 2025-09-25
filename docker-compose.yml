@@ -1,0 +1,41 @@
+services:
+  app:
+    image: anministar/mesmenu-app:1.0.0
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DB_DRIVER: ${DB_DRIVER}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+    networks:
+      - app-network
+    restart: on-failure
+    env_file: .env    # .evn 파일 명시적 참조
+  db:
+    image: mysql:8.0
+    container_name : mysql-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE : mesmenu_db
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  db-data:
+networks:
+  app-network:

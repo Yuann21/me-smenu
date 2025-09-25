@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    ports:
+      - "8081:8080"
+      - "50000:50000"  # 내부 빌드 에이전트 통신용
+    container_name: jenkins
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
+      - JAVA_OPTS=-Djenkins.model.Jenkins.crumbIssuerProxyCompatibility=true -Djenkins.model.Jenkins.location.url=https://www.poposhop.shop/jenkins/
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+volumes:
+  jenkins_home:
